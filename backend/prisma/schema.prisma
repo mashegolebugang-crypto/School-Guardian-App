@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////////////////////////////
+// ENUMS (clean and safe)
+//////////////////////////////////////////////////
+
+enum UserRole {
+  teacher
+  admin
+}
+
+enum Gender {
+  male
+  female
+  other
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+}
+
+enum NotificationType {
+  absent
+  late
+  general
+}
+
+//////////////////////////////////////////////////
+// USERS (Teachers/Admins) — FR1
+//////////////////////////////////////////////////
+
+model User {
+  id            Int        @id @default(autoincrement())
+  fullName      String
+  email         String     @unique
+  passwordHash  String
+  role          UserRole   @default(teacher)
+  createdAt     DateTime   @default(now())
+
+  classes       Class[]
+  attendance    Attendance[] @relation("MarkedBy")
+}
+
+//////////////////////////////////////////////////
+// CLASSES
+//////////////////////////////////////////////////
+
+model Class {
+  id         Int       @id @default(autoincrement())
+  name       String    // e.g., Grade 5A
+  grade      String?
+  teacherId  Int?
+  createdAt  DateTime  @default(now())
+
+  teacher    User?     @relation(fields: [teacherId], references: [id])
+  students   Student[]
+  attendance Attendance[]
+}
+
+//////////////////////////////////////////////////
+// PARENTS / GUARDIANS — FR4
+//////////////////////////////////////////////////
+
+model Parent {
+  id           Int      @id @default(autoincrement())
+  fullName     String
+  phone        String?
+  email        String?
+  createdAt    DateTime @default(now())
+
+  students     Student[]
+  notifications Notification[]
+}
+
+//////////////////////////////////////////////////
+// STUDENTS (Learners) — FR2
+//////////////////////////////////////////////////
+
+model Student {
+  id            Int       @id @default(autoincrement())
+  admissionNo   String    @unique
+  surname       String
+  firstName     String
+  dateOfBirth   DateTime?
+  gender        Gender
+  nationality   String?
+  createdAt     DateTime  @default(now())
+
+  classId       Int?
+  parentId      Int?
+
+  class         Class?    @relation(fields: [classId], references: [id])
+  parent        Parent?   @relation(fields: [parentId], references: [id])
+  attendance    Attendance[]
+  notifications Notification[]   // <-- ADDED: opposite relation field
+}
+
+//////////////////////////////////////////////////
+// ATTENDANCE — FR3
+//////////////////////////////////////////////////
+
+model Attendance {
+  id         Int               @id @default(autoincrement())
+  studentId  Int
+  classId    Int
+  date       DateTime
+  status     AttendanceStatus
+  markedById Int?
+  createdAt  DateTime          @default(now())
+
+  student    Student            @relation(fields: [studentId], references: [id])
+  class      Class              @relation(fields: [classId], references: [id])
+  markedBy   User?              @relation("MarkedBy", fields: [markedById], references: [id])
+
+  @@unique([studentId, date]) // 🚨 prevents duplicate attendance
+  @@index([classId, date])
+}
+
+//////////////////////////////////////////////////
+// NOTIFICATIONS — FR4
+//////////////////////////////////////////////////
+
+model Notification {
+  id          Int               @id @default(autoincrement())
+  parentId    Int
+  studentId   Int
+  type        NotificationType
+  message     String
+  sentAt      DateTime?
+  createdAt   DateTime          @default(now())
+
+  parent      Parent             @relation(fields: [parentId], references: [id])
+  student     Student            @relation(fields: [studentId], references: [id])
+
+  @@index([parentId])
+}

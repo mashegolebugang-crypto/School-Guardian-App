@@ -12,8 +12,9 @@ type CreateStudentInput = {
   parentId?: number;
 };
 
+// Create a new student
 export const createStudent = async (data: CreateStudentInput): Promise<Student> => {
-  const student = await prisma.student.create({
+  return prisma.student.create({
     data: {
       firstName: data.firstName,
       surname: data.surname,
@@ -24,9 +25,9 @@ export const createStudent = async (data: CreateStudentInput): Promise<Student> 
       parentId: data.parentId,
     },
   });
-  return student;
 };
 
+// Get all students
 export const getStudents = async (): Promise<Student[]> => {
   return prisma.student.findMany({
     include: {
@@ -37,10 +38,32 @@ export const getStudents = async (): Promise<Student[]> => {
   });
 };
 
-export function getStudentById(id: number) {
-  throw new Error("Function not implemented.");
-}
-export function updateStudent(id: number, body: any) {
-  throw new Error("Function not implemented.");
-}
+// Get a student by ID
+export const getStudentById = async (id: number): Promise<Student | null> => {
+  return prisma.student.findUnique({
+    where: { id },
+    include: {
+      class: true,
+      parent: true,
+      attendance: true,
+    },
+  });
+};
 
+// Update a student
+export const updateStudent = async (id: number, body: Partial<CreateStudentInput>): Promise<Student> => {
+  return prisma.student.update({
+    where: { id },
+    data: {
+      ...body,
+      dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
+    },
+  });
+};
+
+// Delete a student
+export const deleteStudent = async (id: number): Promise<Student> => {
+  return prisma.student.delete({
+    where: { id },
+  });
+};

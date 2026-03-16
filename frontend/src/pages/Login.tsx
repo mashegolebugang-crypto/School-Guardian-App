@@ -11,7 +11,7 @@ const Login: React.FC = () => {
     try {
       const data = await login(email, password);
       localStorage.setItem("token", data.token);
-      alert("Login successful!");
+      window.location.href = "/dashboard";
       // redirect to dashboard or home page here
     } catch (err: any) {
       setError(err.response?.data?.error || "Login failed");

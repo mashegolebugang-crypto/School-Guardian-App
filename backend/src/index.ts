@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 
 import authRoutes from "./routes/auth.routes";
 import classRoutes from "./routes/class.routes";
@@ -8,6 +9,10 @@ import attendanceRoutes from "./routes/attendance.routes";
 
 dotenv.config();
 const app = express();
+
+app.use(cors({
+  origin: "http://localhost:5173", // Your frontend URL
+}));
 app.use(express.json());
 
 // Auth routes
